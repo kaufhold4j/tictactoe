@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 function Square({ value, onSquareClick }) {
   return (
@@ -11,9 +11,10 @@ function Square({ value, onSquareClick }) {
 function Board() {
   const [xIsNext, setXIsNext] = useState(true);
   const [squares, setSquares] = useState(Array(9).fill(null));
+  const [isVsCpu, setIsVsCpu] = useState(false);
 
   function handleClick(i) {
-    if (calculateWinner(squares) || squares[i]) {
+    if (calculateWinner(squares) || squares[i] || (!xIsNext && isVsCpu)) {
       return;
     }
     const nextSquares = squares.slice();
@@ -41,8 +42,32 @@ function Board() {
     setXIsNext(true);
   }
 
+  useEffect(() => {
+    if (!xIsNext && isVsCpu && !calculateWinner(squares) && isMovesLeft(squares)) {
+      const timer = setTimeout(() => {
+        const move = getBestMove(squares);
+        if (move !== -1) {
+          // Internal call to move (bypass turn hijacking check)
+          const nextSquares = squares.slice();
+          nextSquares[move] = 'O';
+          setSquares(nextSquares);
+          setXIsNext(true);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [xIsNext, isVsCpu, squares]);
+
   return (
     <>
+      <div className="controls">
+        <button
+          className={`cpu-toggle ${isVsCpu ? 'active' : ''}`}
+          onClick={() => setIsVsCpu(!isVsCpu)}
+        >
+          {isVsCpu ? 'Vs Computer: ON' : 'Vs Computer: OFF'}
+        </button>
+      </div>
       <div className="status">{status}</div>
       <div className="board-row">
         <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
@@ -91,4 +116,65 @@ function calculateWinner(squares) {
     }
   }
   return null;
+}
+
+function evaluate(squares) {
+  const winner = calculateWinner(squares);
+  if (winner === 'O') return 10;
+  if (winner === 'X') return -10;
+  return 0;
+}
+
+function isMovesLeft(squares) {
+  return squares.some(s => s === null);
+}
+
+function minimax(squares, depth, isMax) {
+  const score = evaluate(squares);
+
+  if (score === 10) return score - depth;
+  if (score === -10) return score + depth;
+  if (!isMovesLeft(squares)) return 0;
+
+  if (isMax) {
+    let best = -1000;
+    for (let i = 0; i < 9; i++) {
+      if (squares[i] === null) {
+        squares[i] = 'O';
+        best = Math.max(best, minimax(squares, depth + 1, !isMax));
+        squares[i] = null;
+      }
+    }
+    return best;
+  } else {
+    let best = 1000;
+    for (let i = 0; i < 9; i++) {
+      if (squares[i] === null) {
+        squares[i] = 'X';
+        best = Math.min(best, minimax(squares, depth + 1, !isMax));
+        squares[i] = null;
+      }
+    }
+    return best;
+  }
+}
+
+function getBestMove(squares) {
+  let bestVal = -1000;
+  let bestMove = -1;
+  const squaresCopy = squares.slice();
+
+  for (let i = 0; i < 9; i++) {
+    if (squaresCopy[i] === null) {
+      squaresCopy[i] = 'O';
+      let moveVal = minimax(squaresCopy, 0, false);
+      squaresCopy[i] = null;
+
+      if (moveVal > bestVal) {
+        bestMove = i;
+        bestVal = moveVal;
+      }
+    }
+  }
+  return bestMove;
 }

@@ -34,6 +34,27 @@ h1 {
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
+.controls {
+  margin-bottom: 1rem;
+}
+
+.cpu-toggle {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #16213e;
+  color: #e94560;
+  border: 2px solid #0f3460;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cpu-toggle.active {
+  background-color: #e94560;
+  color: white;
+  border-color: #e94560;
+}
+
 .status {
   margin-bottom: 1rem;
   font-size: 1.5rem;
